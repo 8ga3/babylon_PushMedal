@@ -1,5 +1,9 @@
 // Description: メダル落としゲームのサンプル
-// Playground: https://playground.babylonjs.com/#579QOL#3
+// Playground: https://playground.babylonjs.com/#579QOL#5
+//
+// Android ChromeとMeta Quest Browserでは、 chrome://flags でWebXRの設定を有効にする必要があります
+// WebXRの設定が有効になっている場合、WebXRの設定を使ってARモードで実行できます
+// WebXRの設定が無効の場合、通常の3Dモードで実行されます
 
 const canvas = document.getElementById("renderCanvas");
 const engine = new BABYLON.Engine(canvas, true);
@@ -224,19 +228,26 @@ const createScene = async () => {
     // WebXRの設定
     try {
         // HTTPSが必要
-        const xrHelper = await scene.createDefaultXRExperienceAsync();
-        const featuresManager = xrHelper.baseExperience.featuresManager;
-
-        const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 400, height: 400 });
-        ground.isVisible = false;
-
-        featuresManager.enableFeature(BABYLON.WebXRFeatureName.TELEPORTATION, "latest", {
-            xrInput: xrHelper.input,
-            floorMeshes: [ground],
+        const xrHelper = await scene.createDefaultXRExperienceAsync({
+            uiOptions: {
+                sessionMode: "immersive-ar",
+                referenceSpaceType: "local-floor",
+                onError: (error) => {
+                    alert(error);
+                }
+            },
+            optionalFeatures: true
         });
-        featuresManager.enableFeature(BABYLON.WebXRFeatureName.HAND_TRACKING, "latest", {
-            xrInput: xrHelper.input,
-        });
+
+        //Hide skyBox in AR mode
+        xrHelper.baseExperience.sessionManager.onXRSessionInit.add(() => {
+            const mesh = scene.getMeshByName("skyBox");
+            mesh.isVisible = false;
+        })
+        xrHelper.baseExperience.sessionManager.onXRSessionEnded.add(() => {
+            const mesh = scene.getMeshByName("skyBox");
+            mesh.isVisible = true;
+        })
     } catch (e) {
         console.log(e);
     }
